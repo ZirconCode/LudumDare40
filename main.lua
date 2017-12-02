@@ -3,6 +3,12 @@ lume = require "lume"
 io.stdout:setvbuf("no") -- for live output in sublime 3
 --map = require "map"
 
+-- TODO
+-- bullet cooldown after 30 shots or so
+-- bullets can pass through diagonal blocks -> ox,xo
+-- walking collision not 100% snug
+-- fix curses with rotation / interactivity with one another
+
 function love.load()
 	-- love.window.setMode( 800, 600 )
 	-- love.window.setMode( 800, 600, {fullscreen = true} )
@@ -15,6 +21,8 @@ function love.load()
 	for i=0,4 do -- change 3 to the number of tile images minus 1.
 		tile[i] = love.graphics.newImage( "tile"..i..".png" )
 	end
+
+	pic_banana = love.graphics.newImage( "banana.png" )
  
 	bullets = {}
 	bullet_reset = 0
@@ -101,6 +109,7 @@ function love.load()
 	-- map_h = #map -- Obtains the height of the map
 	map_x = 0
 	map_y = 0
+	-- TODO buffer?
 	map_display_buffer = 2 -- We have to buffer one tile before and behind our viewpoint.
                                -- Otherwise, the tiles will just pop into view, and we don't want that.
 	map_display_w = 20
@@ -115,6 +124,41 @@ function love.load()
 	-- for bullet direction != 0
 	char_old_xspeed = 1
 	char_old_yspeed = 0
+
+	curses_active = {false,false,false,false,false,false,true,false}
+	-- curses_active = {true,true,true,true,true,true,true,true}
+	-- curse 1 screen shake
+	-- curse 2 screen darken sometimes
+	-- curse 3 can only have one bullet at a time
+	-- curse 4 rotate slowly
+	-- curse 5 banana
+	-- curse 6 seasickness
+	-- curse 7 colors TOO HARDCORE nevermind just freezes R not GB
+	-- curse 8 switch up/right arrow
+
+	curse1_x = 0
+	curse1_y = 0
+	curse1_timeout = 0
+	curse2_blacken = 100
+	curse4_rotation = 0
+	frame_count = 0
+
+	  -- love.graphics.setBackgroundColor(0, 0, 255, 50)
+
+	-- banana particle system
+	psystem = love.graphics.newParticleSystem(pic_banana, 100)
+  	psystem:setParticleLifetime(2, 5)
+  	psystem:setEmissionRate(20)
+  	psystem:setSizeVariation(1)
+  	psystem:setSizes(1,0.5,0.6,0.7,1.1,1.3)
+  	psystem:setSpin(-3,3)
+  	psystem:setSpinVariation(1)
+  	psystem:setLinearAcceleration(-3000, -1000, 0, 1000)
+	psystem:setPosition(width+200,height/2)
+-- 
+ 
+  	--psystem:setLinearAcceleration(-20, -20, 20, 20) -- Random movement in all directions.
+  	-- psystem:setColors(255, 255, 255, 255, 200, 200, 0, 255, 255, 255, 255, 0)
 end
  
 function draw_map()
@@ -153,9 +197,43 @@ function draw_map()
 end
  
 function love.update( dt )
+	frame_count = (frame_count+dt) % (3.14*2)
+	print(frame_count)
+
 	local speed = 400 * dt
 	-- get input
 	--speed = 50
+
+	if curses_active[7] then
+		if lume.round((frame_count * 10))%3 == 0 then
+			-- love.graphics.setColorMask( lume.randomchoice({true,false}), lume.randomchoice({true,false}), lume.randomchoice({true,false}), true )
+			love.graphics.setColorMask( lume.randomchoice({true,false}), true, true, true )
+		end
+	end
+
+
+	-- curse1_rotangle = (dt*5)-(10*dt)
+	if curses_active[1] then
+		if curse1_timeout < 0 then
+			curse1_x = lume.random(-10, 10)
+			curse1_y = lume.random(-10, 10)
+			if curse1_timeout < -4 then
+				curse1_timeout = lume.random(3,7.5)
+			end
+		end
+		curse1_timeout = curse1_timeout-dt
+	end
+	if curses_active[2] then
+		-- curse2_blacken = curse2_blacken+dt*lume.random(-100, 100)
+		curse2_blacken=math.sin(frame_count)*255
+		curse2_blacken = lume.clamp(curse2_blacken,0,255)
+	end
+	if curses_active[4] then
+		curse4_rotation = curse4_rotation+dt*0.1
+	end
+	if curses_active[5] then
+  		psystem:update(dt)
+  	end
 	
 	old_map_y = map_y
 	old_map_x = map_x
@@ -163,8 +241,14 @@ function love.update( dt )
 	tmp_xspeed = 0
 	tmp_yspeed = 0
 	if love.keyboard.isDown( "w" ) then
-		map_y = map_y - speed
-		tmp_yspeed = -speed
+		
+		if curses_active[8] then
+			map_x = map_x + speed
+			tmp_xspeed = speed
+		else
+			map_y = map_y - speed
+			tmp_yspeed = -speed
+		end
 	end
 	if love.keyboard.isDown( "s" ) then
 		map_y = map_y + speed
@@ -176,8 +260,14 @@ function love.update( dt )
 		tmp_xspeed = -speed
 	end
 	if love.keyboard.isDown( "d" ) then
-		map_x = map_x + speed
-		tmp_xspeed = speed
+		if curses_active[8] then
+			map_y = map_y - speed
+			tmp_yspeed = -speed
+		else
+			map_x = map_x + speed
+			tmp_xspeed = speed
+		end
+		
 	end
 
 	if love.keyboard.isDown( "escape" ) then
@@ -216,7 +306,7 @@ function love.update( dt )
  				b.yvel = b_speed*lume.sign(tmp_yspeed)
  			end
  			if tmp_yspeed == 0 and tmp_xspeed == 0 then
- 				print(char_old_xspeed..','..char_old_yspeed)
+ 				-- print(char_old_xspeed..','..char_old_yspeed)
  				if not (char_old_xspeed == 0) then
  					b.xvel = b_speed*lume.sign(char_old_xspeed)
  				end
@@ -224,8 +314,14 @@ function love.update( dt )
  					b.yvel = b_speed*lume.sign(char_old_yspeed)
  				end
  			end
- 			
- 			bullets[#bullets+1]=b
+ 			b.alive = true
+ 			if curses_active[3] then
+ 				if #bullets < 1 then
+ 					bullets[#bullets+1]=b
+ 				end
+ 			else
+ 				bullets[#bullets+1]=b
+ 			end
  			bullet_reset = 0.1
  		end
  	end
@@ -239,8 +335,33 @@ function love.update( dt )
 		b.x = b.x + b.xvel*dt
 		b.y = b.y + b.yvel*dt
 		-- remove if hits wall
-		b.alive = false
+		ctx = math.floor((b.x)/tile_w)	
+		cty = math.floor((b.y)/tile_h)
+		-- print(ctx..','..cty..':')
+		if b.alive and map[cty+1][ctx+1] == 4 then
+			b.alive = false
+			-- bullets[i] = nil
+			-- print('!!!')
+		end
 	end
+	-- print(#bullets)
+
+	-- print(curses_active[1])
+
+	-- for i=1,#bullets  do
+	-- 	if bullets[i].alive == false then
+	-- 		bullets.remove(i)
+	-- 	end
+	-- end
+	for i=#bullets,1,-1 do -- i starts at the end, and goes "down"
+      if bullets[i].alive == false then
+        table.remove(bullets, i)
+      end
+   	end      
+
+
+
+	-- remove dead bullets
 
 	--checkMapBoundary()
 	checkCharacterCollision()
@@ -296,10 +417,28 @@ function checkMapBoundary()
 		map_y = map_h * tile_h - map_display_h * tile_h - 1
 	end
 end
- 
+
 function love.draw()
-	love.graphics.setColor(255,0,255)
-	love.graphics.rectangle("fill",0,0,width,height)
+	-- love.graphics.setColorMask( red, green, blue, alpha )
+
+	if curses_active[6] then
+		love.graphics.translate(width/2, height/2)
+		local t = love.timer.getTime()
+		love.graphics.shear(0.7*math.cos(t), 0.7*math.cos(t * 0.8))
+		love.graphics.translate(-width/2, -height/2)
+	end
+	if curses_active[1] then
+		love.graphics.translate(curse1_x, curse1_y)
+	end
+	if curses_active[4] then
+		love.graphics.translate(width/2, height/2)
+		love.graphics.rotate(curse4_rotation)
+		love.graphics.translate(-width/2, -height/2)
+	end
+
+
+	-- love.graphics.setColor(255,0,255)
+	-- love.graphics.rectangle("fill",0,0,width,height)
 
 	draw_map()
 
@@ -313,9 +452,22 @@ function love.draw()
 	-- print(#bullets)
 	for i=1,#bullets  do -- change 3 to the number of tile images minus 1.
 		b = bullets[i]
-		love.graphics.setColor(255,255,255)
+		love.graphics.setColor(0,0,0)
 		br = 5
-		love.graphics.ellipse( "fill", b.x-map_x, b.y-map_y, br, br  )
-		b.alive = true
+		if(b.alive == true) then
+			love.graphics.ellipse( "fill", b.x-map_x, b.y-map_y, br, br  )
+		end
+		-- b.alive = true
+	end
+
+	if curses_active[2] then
+		love.graphics.setColor(0,0,0,curse2_blacken)
+		love.graphics.rectangle("fill",0,0,width,height)
+		
+	end
+	if curses_active[5] then
+		love.graphics.setColor(255,255,255,255)
+		love.graphics.draw(psystem, 0, 0)
+		-- love.graphics.draw(pic_banana, 0 , 0 ) -- - tile_h/2
 	end
 end
