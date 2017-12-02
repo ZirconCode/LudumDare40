@@ -111,6 +111,10 @@ function love.load()
 	char_x = width/2
 	char_y = height/2
 	char_r = 16
+
+	-- for bullet direction != 0
+	char_old_xspeed = 1
+	char_old_yspeed = 0
 end
  
 function draw_map()
@@ -186,6 +190,14 @@ function love.update( dt )
  		map_x = old_map_x
  	end
 
+ 	if not (tmp_xspeed == 0 and tmp_yspeed == 0) then
+		char_old_xspeed = tmp_xspeed
+		char_old_yspeed = tmp_yspeed
+	end
+ 		-- char_old_xspeed = 1
+	-- char_old_yspeed = 1
+
+
  	-- bullets
  	b_speed = 800
  	if love.mouse.isDown( 1 ) then
@@ -199,9 +211,18 @@ function love.update( dt )
  			if not (math.abs(tmp_xspeed) == 0) then
  				-- print('asdasdsa')
  				b.xvel = b_speed*lume.sign(tmp_xspeed)
-			end
+ 			end
  			if not (math.abs(tmp_yspeed) == 0) then
  				b.yvel = b_speed*lume.sign(tmp_yspeed)
+ 			end
+ 			if tmp_yspeed == 0 and tmp_xspeed == 0 then
+ 				print(char_old_xspeed..','..char_old_yspeed)
+ 				if not (char_old_xspeed == 0) then
+ 					b.xvel = b_speed*lume.sign(char_old_xspeed)
+ 				end
+ 				if not (char_old_yspeed == 0) then
+ 					b.yvel = b_speed*lume.sign(char_old_yspeed)
+ 				end
  			end
  			
  			bullets[#bullets+1]=b
