@@ -12,9 +12,10 @@ io.stdout:setvbuf("no") -- for live output in sublime 3
 function love.load()
 	-- love.window.setMode( 800, 600 )
 	-- love.window.setMode( 800, 600, {fullscreen = true} )
-	width = 1000
-	height = 800
+	width = 1200
+	height = 700
 	love.window.setMode( width, height )
+	love.window.setMode( 1920, 1024, {fullscreen = true} )
 
 	-- our tiles
 	tile = {}
@@ -125,7 +126,7 @@ function love.load()
 	char_old_xspeed = 1
 	char_old_yspeed = 0
 
-	curses_active = {false,false,false,false,false,false,true,false}
+	curses_active = {false,false,false,false,false,false,false,false}
 	-- curses_active = {true,true,true,true,true,true,true,true}
 	-- curse 1 screen shake
 	-- curse 2 screen darken sometimes
@@ -420,6 +421,12 @@ end
 
 function love.draw()
 	-- love.graphics.setColorMask( red, green, blue, alpha )
+
+	-- TODO
+	-- Split Screen Attempt
+	-- love.graphics.setScissor( 0, 0, width/2, height )
+	-- love.graphics.translate(-width/4, 0)
+
 
 	if curses_active[6] then
 		love.graphics.translate(width/2, height/2)
