@@ -19,7 +19,7 @@ function love.load()
 
 	-- our tiles
 	tile = {}
-	for i=0,4 do
+	for i=1,7 do -- TODO 0 to ?
 		tile[i] = love.graphics.newImage( "tile"..i..".png" )
 	end
 
@@ -27,7 +27,13 @@ function love.load()
 
 	map = {}
 
-	mapdata = require "map1"
+	map_display_w = 20
+	map_display_h = 15
+	tile_w = 50
+	tile_h = 50
+
+	-- mapdata = require "map1"
+	mapdata = require "map2"
 	mdat = mapdata.layers[1].data
 	map_w = mapdata.layers[1].width
 	map_h = mapdata.layers[1].height
@@ -35,7 +41,6 @@ function love.load()
 	-- Hmmmm?
 	print("hmm")
 	print(mdat)
-
 
 	tmpl = {}
 	for i=1,map_w*map_h do
@@ -45,6 +50,13 @@ function love.load()
 			tmpl = {}
 		end
 	end
+
+	-- spawn curses
+	map_curses = {}
+	available_curses = {1,2,3,4,5,6,8,9}
+	static_curse_spawns = {}
+	spawnCurses()
+
 
 	print(map_w..',,,'..map_h)
 		map_w = #map[1] -- Obtains the width of the first row of the map
@@ -62,11 +74,8 @@ function love.load()
 
 	-- TODO buffer?
 	map_display_buffer = 2 -- We have to buffer one tile before and behind our viewpoint.
-                               -- Otherwise, the tiles will just pop into view, and we don't want that.
-	map_display_w = 20
-	map_display_h = 15
-	tile_w = 50
-	tile_h = 50
+                           -- Otherwise, the tiles will just pop into view, and we don't want that.
+
 
 	br = 5 -- bullet radius
 	bullets = {} -- bullets for both but TODO curse 3 change to larger reset instead
@@ -88,6 +97,7 @@ function love.load()
   	-- {false,false,false,false,false,false,false,false,false}
   	p1.curses_active = {false,false,false,false,false,false,false,false,false}
   	p2.curses_active = {false,false,false,false,false,false,false,false,false}
+
 	-- curse 1 screen shake
 	-- curse 2 screen darken sometimes
 	-- curse 3 can only have one bullet at a time
@@ -103,8 +113,88 @@ function love.load()
 	-- TODO FONT
 	-- font = love.graphics.newFont( 12 )
 	love.graphics.setNewFont( 20 )
+
+	-- SOUND
+	music = love.audio.newSource("LudumDare40_CrazyContest.ogg")
+	playSound()
+	setPitch(1)
 end
- 
+
+function spawnCurses()
+	map_curses = {}
+
+	for y=1, map_h do
+		for x=1, map_w do
+			if map[y][x] == 5 then
+				print(x..'.'..y)
+				-- print(#available_curses)
+				ci = math.random(#available_curses)
+				-- print(ci)
+				c = available_curses[ci]
+				map_curses[#map_curses+1] = {25+(x-1)*tile_h,25+(y-1)*tile_w,c} -- curse radius = 25
+				static_curse_spawns[c] = {x,y}
+				-- available_curses[ci] = nil
+				table.remove(available_curses, ci)
+			end
+		end
+	end
+end
+
+function spawnCurse(i)
+	c = static_curse_spawns[i]
+	x = c[1]
+	y = c[2]
+
+	map_curses[#map_curses+1] = {25+(x-1)*tile_h,25+(y-1)*tile_w,i} -- curse radius = 25
+end
+
+function checkCurseCollision(p_num)
+	if p_num == 1 then -- WOW, nice thinking, could've saved some code www, quality < 0
+		p = p1
+	else
+		p = p2
+	end
+
+	for i=1,#map_curses do
+		c = map_curses[i]
+		-- print(lume.distance(c[1],c[2],p.x_map+p.char_x,p.map_y+p.char_y))
+		if lume.distance(c[1],c[2],p.map_x+p.char_x,p.map_y+p.char_y) < p.char_r+25 then
+			-- print(c[3])
+			-- apply curse
+			p.curses_active[c[3]] = true
+			table.remove(map_curses, i)
+			break
+		end
+	end
+end
+
+function drawCurses(p_num)
+	if p_num == 1 then -- WOW, nice thinking, could've saved some code www, quality < 0
+		p = p1
+	else
+		p = p2
+	end
+
+	for i=1,#map_curses do
+		love.graphics.setColor(255,255,255,255)
+		c = map_curses[i]
+		love.graphics.ellipse( "fill", c[1]-p.map_x, c[2]-p.map_y, 25, 25 )
+		love.graphics.setColor(50,0,0,255)
+		love.graphics.print("c"..c[3], c[1]-p.map_x, c[2]-p.map_y)
+	end
+end
+
+function playSound()
+  	music:setVolume(0.5)
+  	music:setLooping(true)
+  	music:play() -- from beginning TODO ?
+ 	
+end
+
+function setPitch(n)
+	music:setPitch(n)
+end
+
 function respawn(p_num)
 	if p_num == 1 then -- WOW, nice thinking, could've saved some code www, quality < 0
 		p = p1
@@ -297,6 +387,9 @@ function love.update( dt ) -- TODO =============================================
 	movePlayer(1,dt)
 	movePlayer(2,dt)
 
+	checkCurseCollision(1)
+	checkCurseCollision(2)
+
  	shootBullets(dt,1)
  	shootBullets(dt,2)
  	updateBullets(dt)
@@ -472,12 +565,35 @@ function updateBullets(dt)
 		if lume.distance(b.x,b.y,p1.map_x+p1.char_x,p1.map_y+p1.char_y, false) < br+p1.char_r and b.p_num == 2 and p1.invincible == 0 then
 			print('col1'..frame_count)
 			respawn(1)
+			-- pick a random true curse if there is one, set to false, respawn it
+			actives = {}
+			for j=1,#p1.curses_active do
+				if p1.curses_active[j] then
+					actives[#actives+1] = j
+				end
+			end
+			if #actives > 0 then
+				ci = lume.randomchoice(actives)
+				p1.curses_active[ci] = false
+				spawnCurse(ci)
+			end
 		end
 		if lume.distance(b.x,b.y,p2.map_x+p2.char_x,p2.map_y+p2.char_y, false) < br+p2.char_r and b.p_num == 1 and p2.invincible == 0 then
 			print('col2'..frame_count)
 			respawn(2)
 			-- steal random curse
 			-- make p2 invisi. for a sec and respawn player
+			actives = {}
+			for j=1,#p1.curses_active do
+				if p2.curses_active[j] then
+					actives[#actives+1] = j
+				end
+			end
+			if #actives > 0 then
+				ci = lume.randomchoice(actives)
+				p2.curses_active[ci] = false
+				spawnCurse(ci)
+			end
 		end
 
 	end
@@ -779,6 +895,7 @@ function love.draw()
 	pre_applyGraphicCurses(1)
 
 	draw_map(1)
+	drawCurses(1)
 	draw_bullets(1)
 	draw_player(1)
 	draw_other_player(2)
@@ -798,6 +915,7 @@ function love.draw()
 	pre_applyGraphicCurses(2)
 
 	draw_map(2)
+	drawCurses(2)
 	draw_bullets(2)
 	draw_player(2)
 	draw_other_player(1)
