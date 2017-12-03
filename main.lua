@@ -15,7 +15,7 @@ function love.load()
 	width = 1200
 	height = 700
 	love.window.setMode( width, height )
-	love.window.setMode( 1920, 1024, {fullscreen = true} )
+	-- love.window.setMode( 1920, 1024, {fullscreen = true} )
 
 	-- our tiles
 	tile = {}
@@ -27,39 +27,8 @@ function love.load()
  
 	bullets = {}
 	bullet_reset = 0
+	bullet_counter = 10
 
-	-- the map (random junk + copy and paste
-	-- map={
-	-- { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}, 
-	-- { 3, 1, 0, 0, 2, 2, 2, 0, 3, 0, 3, 0, 1, 1, 1, 0, 0, 3, 0, 0, 0},
-	-- { 3, 1, 0, 0, 2, 0, 2, 0, 3, 0, 3, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0},
-	-- { 3, 1, 0, 0, 2, 2, 2, 0, 0, 3, 0, 0, 1, 1, 0, 0, 0, 0, 0, 3, 0},
-	-- { 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 3},
-	-- { 3, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 2},
-	-- { 3, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 3, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 3, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 3, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 3, 2, 2, 2, 0, 3, 3, 3, 0, 1, 1, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0},
-	-- { 0, 2, 0, 0, 0, 3, 0, 3, 0, 1, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 1},
-	-- { 0, 2, 0, 0, 0, 3, 0, 3, 0, 1, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0},
-	-- { 0, 2, 2, 2, 0, 3, 3, 3, 0, 1, 1, 1, 0, 2, 2, 2, 0, 0, 0, 0, 0},
-	-- { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
-	-- { 0, 1, 0, 0, 2, 2, 2, 0, 3, 0, 3, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0},
-	-- { 0, 1, 0, 0, 2, 0, 2, 0, 3, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 0, 1, 1, 0, 2, 2, 2, 0, 0, 3, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-	-- { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 3},
-	-- { 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0},
-	-- { 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	-- { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}
-	-- }
 
 	map = {}
 
@@ -126,8 +95,8 @@ function love.load()
 	char_old_xspeed = 1
 	char_old_yspeed = 0
 
-	curses_active = {false,false,false,false,false,false,false,false}
-	-- curses_active = {true,true,true,true,true,true,true,true}
+	curses_active = {false,false,false,false,false,false,false,false,false}
+	-- curses_active = {true,true,true,true,true,true,true,true,true}
 	-- curse 1 screen shake
 	-- curse 2 screen darken sometimes
 	-- curse 3 can only have one bullet at a time
@@ -136,6 +105,7 @@ function love.load()
 	-- curse 6 seasickness
 	-- curse 7 colors TOO HARDCORE nevermind just freezes R not GB
 	-- curse 8 switch up/right arrow
+	-- curse 9 slow down sporadically
 
 	curse1_x = 0
 	curse1_y = 0
@@ -162,7 +132,7 @@ function love.load()
   	-- psystem:setColors(255, 255, 255, 255, 200, 200, 0, 255, 255, 255, 255, 0)
 end
  
-function draw_map()
+function draw_map(p_num)
 	offset_x = map_x % tile_w
 	offset_y = map_y % tile_h
 	firstTile_x = math.floor(map_x / tile_w)
@@ -196,14 +166,38 @@ function draw_map()
 		end
 	end
 end
+
+function draw_bullets(p_num)
+	-- draw bullets
+	-- print(#bullets)
+	for i=1,#bullets  do -- change 3 to the number of tile images minus 1.
+		b = bullets[i]
+		love.graphics.setColor(0,0,0)
+		br = 5
+		if(b.alive == true) then
+			love.graphics.ellipse( "fill", b.x-map_x, b.y-map_y, br, br  )
+		end
+		-- b.alive = true
+	end
+end
+
+function draw_player(p_num)
+	love.graphics.setColor(0,0,0)
+	love.graphics.ellipse( "fill", char_x, char_y, char_r, char_r  )
+end
  
 function love.update( dt )
 	frame_count = (frame_count+dt) % (3.14*2)
-	print(frame_count)
+	-- print(frame_count)
+
 
 	local speed = 400 * dt
 	-- get input
 	--speed = 50
+
+	if curses_active[9] and frame_count % 1 > 0.5 then
+		speed = 100 * dt
+	end
 
 	if curses_active[7] then
 		if lume.round((frame_count * 10))%3 == 0 then
@@ -291,6 +285,7 @@ function love.update( dt )
 
  	-- bullets
  	b_speed = 800
+ 	print('br'..bullet_reset..'bc'..bullet_counter)
  	if love.mouse.isDown( 1 ) then
  		if bullet_reset == 0 then
  			b = {}
@@ -324,6 +319,11 @@ function love.update( dt )
  				bullets[#bullets+1]=b
  			end
  			bullet_reset = 0.1
+ 			bullet_counter = bullet_counter -1
+ 			if bullet_counter == 0 then
+ 				bullet_reset = 1
+ 				bullet_counter = 10
+ 			end
  		end
  	end
  	if bullet_reset > 0 then
@@ -419,14 +419,18 @@ function checkMapBoundary()
 	end
 end
 
+
+
 function love.draw()
 	-- love.graphics.setColorMask( red, green, blue, alpha )
 
+
+	-- love.graphics.clear()
 	-- TODO
 	-- Split Screen Attempt
-	-- love.graphics.setScissor( 0, 0, width/2, height )
-	-- love.graphics.translate(-width/4, 0)
-
+	love.graphics.setScissor( 0, 0, width/2, height )
+	love.graphics.translate(-width/4, 0)
+	love.graphics.clear()
 
 	if curses_active[6] then
 		love.graphics.translate(width/2, height/2)
@@ -447,25 +451,17 @@ function love.draw()
 	-- love.graphics.setColor(255,0,255)
 	-- love.graphics.rectangle("fill",0,0,width,height)
 
-	draw_map()
+	draw_map(1)
+	draw_bullets(1)
+	draw_player(1)
 
-	love.graphics.setColor(0,0,0)
-	love.graphics.ellipse( "fill", char_x, char_y, char_r, char_r  )
-
+	
+	-- TODO draw HUD
 	love.graphics.setColor(255,255,255)
 	love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
 
-	-- draw bullets
-	-- print(#bullets)
-	for i=1,#bullets  do -- change 3 to the number of tile images minus 1.
-		b = bullets[i]
-		love.graphics.setColor(0,0,0)
-		br = 5
-		if(b.alive == true) then
-			love.graphics.ellipse( "fill", b.x-map_x, b.y-map_y, br, br  )
-		end
-		-- b.alive = true
-	end
+	
+
 
 	if curses_active[2] then
 		love.graphics.setColor(0,0,0,curse2_blacken)
@@ -477,4 +473,15 @@ function love.draw()
 		love.graphics.draw(psystem, 0, 0)
 		-- love.graphics.draw(pic_banana, 0 , 0 ) -- - tile_h/2
 	end
+
+
+	--- player 2
+	love.graphics.setScissor( width/2, 0, width, height )
+	love.graphics.translate(width/4+width/4, 0)
+	love.graphics.clear()
+
+	draw_map(2)
+	draw_bullets(2)
+	draw_player(2)
+
 end
