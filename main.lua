@@ -33,7 +33,8 @@ function love.load()
 	tile_h = 50
 
 	-- mapdata = require "map1"
-	mapdata = require "map2"
+	-- mapdata = require "map2"
+	mapdata = require "DeadGardens"
 	mdat = mapdata.layers[1].data
 	map_w = mapdata.layers[1].width
 	map_h = mapdata.layers[1].height
@@ -51,6 +52,11 @@ function love.load()
 		end
 	end
 
+	-- TODO
+	tile_curse_spawn = 6
+	tile_wall = 7
+	tile_water = 3
+
 	-- spawn curses
 	map_curses = {}
 	available_curses = {1,2,3,4,5,6,8,9}
@@ -65,6 +71,7 @@ function love.load()
 
 	print(map)
 	print("hmm")
+
  
 	-- map variables
 	-- map_w = #map[1] -- Obtains the width of the first row of the map
@@ -95,8 +102,8 @@ function love.load()
   	respawn(2)
   	-- {true,true,true,true,true,true,true,true,true}
   	-- {false,false,false,false,false,false,false,false,false}
-  	p1.curses_active = {true,false,false,false,false,false,false,false,false}
-  	p2.curses_active = {true,false,false,false,false,false,false,false,false}
+  	p1.curses_active = {false,false,false,false,false,false,false,false,false}
+  	p2.curses_active = {false,false,false,false,false,false,false,false,false}
 
 	-- curse 1 screen shake
 	-- curse 2 screen darken sometimes
@@ -135,7 +142,7 @@ function spawnCurses()
 
 	for y=1, map_h do
 		for x=1, map_w do
-			if map[y][x] == 5 then
+			if map[y][x] == tile_curse_spawn then
 				print(x..'.'..y)
 				-- print(#available_curses)
 				ci = math.random(#available_curses)
@@ -215,11 +222,11 @@ function respawn(p_num)
 	p.invincible = 4
 
 	if p_num == 1 then
-		p.map_x = -100
-		p.map_y = 0
+		p.map_x = 1200
+		p.map_y = 1100
 	else
-		p.map_x = 200
-		p.map_y = 0
+		p.map_x = 1200
+		p.map_y = 950
 	end
 end
 
@@ -587,7 +594,7 @@ function updateBullets(dt)
 		ctx = math.floor((b.x)/tile_w)	
 		cty = math.floor((b.y)/tile_h)
 		-- print(ctx..','..cty..':')
-		if b.alive and map[cty+1][ctx+1] == 4 then
+		if b.alive and map[cty+1][ctx+1] == tile_wall then
 			b.alive = false
 		end
 
@@ -802,7 +809,7 @@ function checkCharacterCollision(p_num)
 			d = lume.distance(closestX, closestY, tcx, tcy, false)
 			-- print(d)
 			if d <= char_r then
-				if map[ty][tx] == 4 then
+				if map[ty][tx] == tile_wall or map[ty][tx] == tile_water  then
 					collision = true
 				end
 			end
