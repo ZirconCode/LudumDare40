@@ -82,10 +82,12 @@ function love.load()
 
   	-- ===========================
 
+  	respawn(1)
+  	respawn(2)
   	-- {true,true,true,true,true,true,true,true,true}
   	-- {false,false,false,false,false,false,false,false,false}
   	p1.curses_active = {false,false,false,false,false,false,false,false,false}
-  	p2.curses_active = {false,false,true,false,true,false,false,true,true}
+  	p2.curses_active = {false,false,false,false,false,false,false,false,false}
 	-- curse 1 screen shake
 	-- curse 2 screen darken sometimes
 	-- curse 3 can only have one bullet at a time
@@ -98,19 +100,36 @@ function love.load()
 
 	-- love.graphics.setBackgroundColor(0, 0, 255, 50)
 
-
 	-- TODO FONT
 	-- font = love.graphics.newFont( 12 )
 	love.graphics.setNewFont( 20 )
 end
  
+function respawn(p_num)
+	if p_num == 1 then -- WOW, nice thinking, could've saved some code www, quality < 0
+		p = p1
+	else
+		p = p2
+	end
+
+	p.invincible = 4
+
+	if p_num == 1 then
+		p.map_x = -100
+		p.map_y = 0
+	else
+		p.map_x = 200
+		p.map_y = 0
+	end
+end
+
 function createPlayer(p_num,p)
 	p.map_x = 0
 	p.map_y = 0
 
 	p.char_x = width/2
 	p.char_y = height/2
-	p.char_r = 16
+	p.char_r = 20
 
 	p.bullet_reset = 0
 	p.bullet_counter = 10
@@ -127,6 +146,8 @@ function createPlayer(p_num,p)
 	p.char_old_yspeed = 0
 
 	p.curse_num = 0
+
+	p.invincible = 0
 
 
 	-- banana particle system
@@ -218,23 +239,36 @@ function draw_player(p_num)
 		char_x = p1.char_x
 		char_y = p1.char_y
 		char_r = p1.char_r
+		p = p1
 	else
 		char_x = p2.char_x
 		char_y = p2.char_y
 		char_r = p2.char_r
+		p = p2
 	end
 
 	love.graphics.setColor(0,0,0)
+	if(p.invincible > 0) then
+			love.graphics.setColor(255,255,255,100)
+	end
+
 	love.graphics.ellipse( "fill", char_x, char_y, char_r, char_r  )
 end
 
 function draw_other_player(p_num) -- haha such ugly code..
+	love.graphics.setColor(255,0,0)
+
 	if p_num == 1 then -- draw 2nd player on first screen
 		char_x = p1.char_x
 		char_y = p1.char_y
 		char_r = p1.char_r
 		map_x = p2.map_x-p1.map_x
 		map_y = p2.map_y-p1.map_y
+		-- p = p2
+
+		if(p1.invincible > 0) then
+			love.graphics.setColor(255,255,0,200)
+		end
 	else
 		-- print('yesy')
 		char_x = p2.char_x
@@ -242,11 +276,16 @@ function draw_other_player(p_num) -- haha such ugly code..
 		char_r = p2.char_r
 		map_x = p1.map_x-p2.map_x
 		map_y = p1.map_y-p2.map_y
+		-- p = p1
+
+		if(p2.invincible > 0) then
+			love.graphics.setColor(255,255,0,200)
+		end
 	end
 	-- print(p1.map_x ..','..p1.map_y..':'..p2.map_x ..','..p2.map_y..':')
 	-- print(p1.char_x ..','..p1.char_y..':'..p2.char_x ..','..p2.char_y..':') -- static
 	-- print(p1.map_x..'hmm'..p1.map_y)
-	love.graphics.setColor(255,0,0)
+	
 	love.graphics.ellipse( "fill", -map_x+char_x, -map_y+char_y, char_r, char_r  )
 end
  
@@ -349,7 +388,7 @@ function shootBullets(dt,p_num)
  	-- print('br'..p1.bullet_reset..'bc'..p1.bullet_counter)
  	-- if love.mouse.isDown( 1 ) then
  	if (love.keyboard.isDown( "q" ) and p_num == 1) or (love.keyboard.isDown( "m" ) and p_num == 2) then -- shoot with q and m TODO
- 		if bullet_reset == 0 then
+ 		if bullet_reset == 0 and p.invincible == 0 then
  			b = {}
  			b.x = char_x+map_x -- TODOOOOOO
  			b.y = char_y+map_y
@@ -380,6 +419,8 @@ function shootBullets(dt,p_num)
  			-- else
  			-- 	bullets[#bullets+1]=b
  			-- end
+ 			b.p_num = p_num
+
  			bullets[#bullets+1]=b
 
  			if p.curses_active[3] then
@@ -406,6 +447,10 @@ function shootBullets(dt,p_num)
 		p2.bullet_counter = bullet_counter
 	end
 
+	-- TODO correct place?
+	if p.invincible > 0 then
+ 		p.invincible = lume.clamp(p.invincible-dt,0,10)
+ 	end
 end
 
 function updateBullets(dt)
@@ -424,7 +469,16 @@ function updateBullets(dt)
 		end
 
 		-- collision with player?
-		
+		if lume.distance(b.x,b.y,p1.map_x+p1.char_x,p1.map_y+p1.char_y, false) < br+p1.char_r and b.p_num == 2 and p1.invincible == 0 then
+			print('col1'..frame_count)
+			respawn(1)
+		end
+		if lume.distance(b.x,b.y,p2.map_x+p2.char_x,p2.map_y+p2.char_y, false) < br+p2.char_r and b.p_num == 1 and p2.invincible == 0 then
+			print('col2'..frame_count)
+			respawn(2)
+			-- steal random curse
+			-- make p2 invisi. for a sec and respawn player
+		end
 
 	end
 
