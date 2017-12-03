@@ -19,16 +19,11 @@ function love.load()
 
 	-- our tiles
 	tile = {}
-	for i=0,4 do -- change 3 to the number of tile images minus 1.
+	for i=0,4 do
 		tile[i] = love.graphics.newImage( "tile"..i..".png" )
 	end
 
 	pic_banana = love.graphics.newImage( "banana.png" )
- 
-	bullets = {}
-	bullet_reset = 0
-	bullet_counter = 10
-
 
 	map = {}
 
@@ -39,7 +34,6 @@ function love.load()
 
 	-- Hmmmm?
 	print("hmm")
-	-- print(toString(mdat))
 	print(mdat)
 
 
@@ -51,13 +45,6 @@ function love.load()
 			tmpl = {}
 		end
 	end
-	-- for i,5 do
-	-- 	
-	-- 	if(#tmpl == map_w) then
-	-- 		map[#map+1]=tmpl
-	-- 		tmpl = {}
-	-- 	end
-	-- end
 
 	print(map_w..',,,'..map_h)
 		map_w = #map[1] -- Obtains the width of the first row of the map
@@ -66,19 +53,13 @@ function love.load()
 
 	print(map)
 	print("hmm")
-
-	-- local file = io.open("map1.csv", "r");
- -- 	local map = {}
- -- 	for line in file:lines() do
- --    	table.insert (map, line);
- -- 	end
- -- 	file.close()
  
 	-- map variables
 	-- map_w = #map[1] -- Obtains the width of the first row of the map
 	-- map_h = #map -- Obtains the height of the map
-	map_x = 0
-	map_y = 0
+
+	frame_count = 0
+
 	-- TODO buffer?
 	map_display_buffer = 2 -- We have to buffer one tile before and behind our viewpoint.
                                -- Otherwise, the tiles will just pop into view, and we don't want that.
@@ -87,16 +68,24 @@ function love.load()
 	tile_w = 50
 	tile_h = 50
 
-	char_x = width/2
-	char_y = height/2
-	char_r = 16
+	br = 5 -- bullet radius
+	bullets = {} -- bullets for both but TODO curse 3 change to larger reset instead
 
-	-- for bullet direction != 0
-	char_old_xspeed = 1
-	char_old_yspeed = 0
+	-- PLAYER 1 ===========================
+	p1 = {}
+	createPlayer(1,p1)
+	
 
-	curses_active = {false,false,false,false,false,false,false,false,false}
-	-- curses_active = {true,true,true,true,true,true,true,true,true}
+  	-- PLAYER 2 ===========================
+  	p2 = {}
+	createPlayer(2,p2)
+
+  	-- ===========================
+
+  	-- {true,true,true,true,true,true,true,true,true}
+  	-- {false,false,false,false,false,false,false,false,false}
+  	p1.curses_active = {false,false,false,false,false,false,false,false,false}
+  	p2.curses_active = {false,false,true,false,true,false,false,true,true}
 	-- curse 1 screen shake
 	-- curse 2 screen darken sometimes
 	-- curse 3 can only have one bullet at a time
@@ -107,32 +96,68 @@ function love.load()
 	-- curse 8 switch up/right arrow
 	-- curse 9 slow down sporadically
 
-	curse1_x = 0
-	curse1_y = 0
-	curse1_timeout = 0
-	curse2_blacken = 100
-	curse4_rotation = 0
-	frame_count = 0
+	-- love.graphics.setBackgroundColor(0, 0, 255, 50)
 
-	  -- love.graphics.setBackgroundColor(0, 0, 255, 50)
 
-	-- banana particle system
-	psystem = love.graphics.newParticleSystem(pic_banana, 100)
-  	psystem:setParticleLifetime(2, 5)
-  	psystem:setEmissionRate(20)
-  	psystem:setSizeVariation(1)
-  	psystem:setSizes(1,0.5,0.6,0.7,1.1,1.3)
-  	psystem:setSpin(-3,3)
-  	psystem:setSpinVariation(1)
-  	psystem:setLinearAcceleration(-3000, -1000, 0, 1000)
-	psystem:setPosition(width+200,height/2)
--- 
- 
-  	--psystem:setLinearAcceleration(-20, -20, 20, 20) -- Random movement in all directions.
-  	-- psystem:setColors(255, 255, 255, 255, 200, 200, 0, 255, 255, 255, 255, 0)
+	-- TODO FONT
+	-- font = love.graphics.newFont( 12 )
+	love.graphics.setNewFont( 20 )
 end
  
+function createPlayer(p_num,p)
+	p.map_x = 0
+	p.map_y = 0
+
+	p.char_x = width/2
+	p.char_y = height/2
+	p.char_r = 16
+
+	p.bullet_reset = 0
+	p.bullet_counter = 10
+
+
+	p.curse1_x = 0
+	p.curse1_y = 0
+	p.curse1_timeout = 0
+	p.curse2_blacken = 100
+	p.curse4_rotation = 0
+
+	-- for bullet direction != 0
+	p.char_old_xspeed = 1
+	p.char_old_yspeed = 0
+
+	p.curse_num = 0
+
+
+	-- banana particle system
+	p.psystem = love.graphics.newParticleSystem(pic_banana, 100)
+  	p.psystem:setParticleLifetime(2, 5)
+  	p.psystem:setEmissionRate(20)
+  	p.psystem:setSizeVariation(1)
+  	p.psystem:setSizes(1,0.5,0.6,0.7,1.1,1.3)
+  	p.psystem:setSpin(-3,3)
+  	p.psystem:setSpinVariation(1)
+
+  	if p_num == 1 then
+  		p.psystem:setLinearAcceleration(3000, -1000, 0, 1000)
+		p.psystem:setPosition(width/2 - width/4 - 100,height/2)
+  	else
+  		p.psystem:setLinearAcceleration(-3000, -1000, 0, 1000)
+		p.psystem:setPosition(width/2 + width/4 + 100,height/2)
+  	end
+
+  	-- psystem:setColors(255, 255, 255, 255, 200, 200, 0, 255, 255, 255, 255, 0)
+end
+
 function draw_map(p_num)
+	if(p_num == 1) then
+		map_x = p1.map_x
+		map_y = p1.map_y
+	else
+		map_x = p2.map_x
+		map_y = p2.map_y
+	end
+
 	offset_x = map_x % tile_w
 	offset_y = map_y % tile_h
 	firstTile_x = math.floor(map_x / tile_w)
@@ -168,12 +193,19 @@ function draw_map(p_num)
 end
 
 function draw_bullets(p_num)
+	if(p_num == 1) then
+		map_x = p1.map_x
+		map_y = p1.map_y
+	else
+		map_x = p2.map_x
+		map_y = p2.map_y
+	end
+
 	-- draw bullets
 	-- print(#bullets)
 	for i=1,#bullets  do -- change 3 to the number of tile images minus 1.
 		b = bullets[i]
 		love.graphics.setColor(0,0,0)
-		br = 5
 		if(b.alive == true) then
 			love.graphics.ellipse( "fill", b.x-map_x, b.y-map_y, br, br  )
 		end
@@ -182,114 +214,144 @@ function draw_bullets(p_num)
 end
 
 function draw_player(p_num)
+	if p_num == 1 then
+		char_x = p1.char_x
+		char_y = p1.char_y
+		char_r = p1.char_r
+	else
+		char_x = p2.char_x
+		char_y = p2.char_y
+		char_r = p2.char_r
+	end
+
 	love.graphics.setColor(0,0,0)
 	love.graphics.ellipse( "fill", char_x, char_y, char_r, char_r  )
 end
+
+function draw_other_player(p_num) -- haha such ugly code..
+	if p_num == 1 then -- draw 2nd player on first screen
+		char_x = p1.char_x
+		char_y = p1.char_y
+		char_r = p1.char_r
+		map_x = p2.map_x-p1.map_x
+		map_y = p2.map_y-p1.map_y
+	else
+		-- print('yesy')
+		char_x = p2.char_x
+		char_y = p2.char_y
+		char_r = p2.char_r
+		map_x = p1.map_x-p2.map_x
+		map_y = p1.map_y-p2.map_y
+	end
+	-- print(p1.map_x ..','..p1.map_y..':'..p2.map_x ..','..p2.map_y..':')
+	-- print(p1.char_x ..','..p1.char_y..':'..p2.char_x ..','..p2.char_y..':') -- static
+	-- print(p1.map_x..'hmm'..p1.map_y)
+	love.graphics.setColor(255,0,0)
+	love.graphics.ellipse( "fill", -map_x+char_x, -map_y+char_y, char_r, char_r  )
+end
  
-function love.update( dt )
-	frame_count = (frame_count+dt) % (3.14*2)
-	-- print(frame_count)
+function love.update( dt ) -- TODO ======================================================
 
-
-	local speed = 400 * dt
-	-- get input
-	--speed = 50
-
-	if curses_active[9] and frame_count % 1 > 0.5 then
-		speed = 100 * dt
-	end
-
-	if curses_active[7] then
-		if lume.round((frame_count * 10))%3 == 0 then
-			-- love.graphics.setColorMask( lume.randomchoice({true,false}), lume.randomchoice({true,false}), lume.randomchoice({true,false}), true )
-			love.graphics.setColorMask( lume.randomchoice({true,false}), true, true, true )
-		end
-	end
-
-
-	-- curse1_rotangle = (dt*5)-(10*dt)
-	if curses_active[1] then
-		if curse1_timeout < 0 then
-			curse1_x = lume.random(-10, 10)
-			curse1_y = lume.random(-10, 10)
-			if curse1_timeout < -4 then
-				curse1_timeout = lume.random(3,7.5)
-			end
-		end
-		curse1_timeout = curse1_timeout-dt
-	end
-	if curses_active[2] then
-		-- curse2_blacken = curse2_blacken+dt*lume.random(-100, 100)
-		curse2_blacken=math.sin(frame_count)*255
-		curse2_blacken = lume.clamp(curse2_blacken,0,255)
-	end
-	if curses_active[4] then
-		curse4_rotation = curse4_rotation+dt*0.1
-	end
-	if curses_active[5] then
-  		psystem:update(dt)
-  	end
+  	updateCurses(1,dt)
+  	updateCurses(2,dt)
 	
-	old_map_y = map_y
-	old_map_x = map_x
+	movePlayer(1,dt)
+	movePlayer(2,dt)
 
-	tmp_xspeed = 0
-	tmp_yspeed = 0
-	if love.keyboard.isDown( "w" ) then
-		
-		if curses_active[8] then
-			map_x = map_x + speed
-			tmp_xspeed = speed
-		else
-			map_y = map_y - speed
-			tmp_yspeed = -speed
-		end
-	end
-	if love.keyboard.isDown( "s" ) then
-		map_y = map_y + speed
-		tmp_yspeed = speed
-	end
- 
-	if love.keyboard.isDown( "a" ) then
-		map_x = map_x -speed
-		tmp_xspeed = -speed
-	end
-	if love.keyboard.isDown( "d" ) then
-		if curses_active[8] then
-			map_y = map_y - speed
-			tmp_yspeed = -speed
-		else
-			map_x = map_x + speed
-			tmp_xspeed = speed
-		end
-		
-	end
+ 	shootBullets(dt,1)
+ 	shootBullets(dt,2)
+ 	updateBullets(dt)
 
+	--checkMapBoundary()
+	-- checkCharacterCollision() -- ??? time to cleanup some code...
 	if love.keyboard.isDown( "escape" ) then
 		love.event.quit()
 	end
+end
 
- 	col = checkCharacterCollision()
- 	if col then
- 		map_y = old_map_y
- 		map_x = old_map_x
- 	end
-
- 	if not (tmp_xspeed == 0 and tmp_yspeed == 0) then
-		char_old_xspeed = tmp_xspeed
-		char_old_yspeed = tmp_yspeed
+function updateCurses(p_num, dt)
+	if p_num == 1 then -- WOW, nice thinking, could've saved some code www, quality < 0
+		p = p1
+	else
+		p = p2
 	end
- 		-- char_old_xspeed = 1
-	-- char_old_yspeed = 1
 
+	frame_count = (frame_count+dt) % (3.14*2) -- TODO p1?
+	-- print(frame_count)
 
- 	-- bullets
+	-- CURSE IRRELEVANT for Split Screen TODO
+	-- if curses_active[7] then
+	-- 	if lume.round((frame_count * 10))%3 == 0 then
+	-- 		-- love.graphics.setColorMask( lume.randomchoice({true,false}), lume.randomchoice({true,false}), lume.randomchoice({true,false}), true )
+	-- 		love.graphics.setColorMask( lume.randomchoice({true,false}), true, true, true )
+	-- 	end
+	-- end
+
+	-- curse1_rotangle = (dt*5)-(10*dt)
+	if p.curses_active[1] then
+		if p.curse1_timeout < 0 then
+			p.curse1_x = lume.random(-10, 10)
+			p.curse1_y = lume.random(-10, 10)
+			if p.curse1_timeout < -4 then
+				p.curse1_timeout = lume.random(3,7.5)
+			end
+		end
+		p.curse1_timeout = p.curse1_timeout-dt
+	end
+	if p.curses_active[2] then
+		-- curse2_blacken = curse2_blacken+dt*lume.random(-100, 100)
+		p.curse2_blacken=math.sin(frame_count)*255
+		p.curse2_blacken = lume.clamp(p.curse2_blacken,0,255)
+	end
+	if p.curses_active[4] then
+		p.curse4_rotation = p.curse4_rotation+dt*0.1
+	end
+	if p.curses_active[5] then
+  		p.psystem:update(dt)
+  	end
+
+  	-- count curses
+  	i = 0 -- 0 good because one curse ignored
+  	for j=1,#p.curses_active do
+  		if p.curses_active[j] then
+  			i = i+1
+  		end
+  	end
+  	p.curse_num = i
+
+end
+
+function shootBullets(dt,p_num)
+
+	char_x = p1.char_x
+	char_y = p1.char_y
+
+	if p_num == 1 then
+		bullet_reset = p1.bullet_reset
+		bullet_counter = p1.bullet_counter
+		map_x = p1.map_x
+		map_y = p1.map_y
+		tmp_xspeed = p1.char_old_xspeed   -- TODO does work?
+		tmp_yspeed = p1.char_old_yspeed
+		p = p1
+	else
+		bullet_reset = p2.bullet_reset
+		bullet_counter = p2.bullet_counter
+		map_x = p2.map_x
+		map_y = p2.map_y
+		tmp_xspeed = p2.char_old_xspeed   -- TODO does work?
+		tmp_yspeed = p2.char_old_yspeed
+		p = p2
+	end
+
+	-- bullets
  	b_speed = 800
- 	print('br'..bullet_reset..'bc'..bullet_counter)
- 	if love.mouse.isDown( 1 ) then
+ 	-- print('br'..p1.bullet_reset..'bc'..p1.bullet_counter)
+ 	-- if love.mouse.isDown( 1 ) then
+ 	if (love.keyboard.isDown( "q" ) and p_num == 1) or (love.keyboard.isDown( "m" ) and p_num == 2) then -- shoot with q and m TODO
  		if bullet_reset == 0 then
  			b = {}
- 			b.x = char_x+map_x
+ 			b.x = char_x+map_x -- TODOOOOOO
  			b.y = char_y+map_y
 
  			b.yvel = 0
@@ -301,23 +363,29 @@ function love.update( dt )
  			if not (math.abs(tmp_yspeed) == 0) then
  				b.yvel = b_speed*lume.sign(tmp_yspeed)
  			end
- 			if tmp_yspeed == 0 and tmp_xspeed == 0 then
- 				-- print(char_old_xspeed..','..char_old_yspeed)
- 				if not (char_old_xspeed == 0) then
- 					b.xvel = b_speed*lume.sign(char_old_xspeed)
- 				end
- 				if not (char_old_yspeed == 0) then
- 					b.yvel = b_speed*lume.sign(char_old_yspeed)
- 				end
- 			end
+ 			-- if tmp_yspeed == 0 and tmp_xspeed == 0 then
+ 			-- 	-- print(char_old_xspeed..','..char_old_yspeed)
+ 			-- 	if not (p1.char_old_xspeed == 0) then
+ 			-- 		b.xvel = b_speed*lume.sign(p1.char_old_xspeed)
+ 			-- 	end
+ 			-- 	if not (p1.char_old_yspeed == 0) then
+ 			-- 		b.yvel = b_speed*lume.sign(p1.char_old_yspeed)
+ 			-- 	end
+ 			-- end
  			b.alive = true
- 			if curses_active[3] then
- 				if #bullets < 1 then
- 					bullets[#bullets+1]=b
- 				end
- 			else
- 				bullets[#bullets+1]=b
+ 			-- if curses_active[3] then
+ 			-- 	if #bullets < 1 then -- TODO ---------------------------------------------------------
+ 			-- 		bullets[#bullets+1]=b
+ 			-- 	end
+ 			-- else
+ 			-- 	bullets[#bullets+1]=b
+ 			-- end
+ 			bullets[#bullets+1]=b
+
+ 			if p.curses_active[3] then
+ 				bullet_counter = 1
  			end
+
  			bullet_reset = 0.1
  			bullet_counter = bullet_counter -1
  			if bullet_counter == 0 then
@@ -330,8 +398,20 @@ function love.update( dt )
  		bullet_reset = lume.clamp(bullet_reset-dt,0,1)
  	end
 
- 	-- update bullets
-	for i=1,#bullets  do -- change 3 to the number of tile images minus 1.
+ 	if p_num == 1 then -- SIGHHH...
+		p1.bullet_reset = bullet_reset
+		p1.bullet_counter = bullet_counter
+	else
+		p2.bullet_reset = bullet_reset
+		p2.bullet_counter = bullet_counter
+	end
+
+end
+
+function updateBullets(dt)
+
+	-- update bullets
+	for i=1,#bullets  do
 		b = bullets[i]
 		b.x = b.x + b.xvel*dt
 		b.y = b.y + b.yvel*dt
@@ -341,34 +421,166 @@ function love.update( dt )
 		-- print(ctx..','..cty..':')
 		if b.alive and map[cty+1][ctx+1] == 4 then
 			b.alive = false
-			-- bullets[i] = nil
-			-- print('!!!')
 		end
+
+		-- collision with player?
+		
+
 	end
-	-- print(#bullets)
 
-	-- print(curses_active[1])
-
-	-- for i=1,#bullets  do
-	-- 	if bullets[i].alive == false then
-	-- 		bullets.remove(i)
-	-- 	end
-	-- end
-	for i=#bullets,1,-1 do -- i starts at the end, and goes "down"
+	-- remove dead bullets
+	for i=#bullets,1,-1 do -- backwards...
       if bullets[i].alive == false then
         table.remove(bullets, i)
       end
-   	end      
+   	end    
 
-
-
-	-- remove dead bullets
-
-	--checkMapBoundary()
-	checkCharacterCollision()
 end
 
-function checkCharacterCollision()
+function movePlayer(p_num, dt)
+
+	if p_num == 1 then --- sigh...
+		p = p1
+	else
+		p = p2
+	end
+
+	local speed = 400 * dt
+	-- get input
+	--speed = 50
+
+	if p.curses_active[9] and frame_count % 1 > 0.5 then
+		speed = 100 * dt
+	end
+
+	if p_num == 1 then
+		p1.old_map_y = p1.map_y
+		p1.old_map_x = p1.map_x
+		map_x = p1.map_x
+		map_y = p1.map_y
+	else
+		p2.old_map_y = p2.map_y
+		p2.old_map_x = p2.map_x
+		map_x = p2.map_x
+		map_y = p2.map_y
+	end
+
+
+	tmp_xspeed = 0
+	tmp_yspeed = 0
+
+	------------------- P1
+	if (love.keyboard.isDown( "w" ) and p_num == 1) or (love.keyboard.isDown( "up" ) and p_num == 2) then
+		
+		if p.curses_active[8] then
+			map_x = map_x + speed
+			tmp_xspeed = speed
+		else
+			map_y = map_y - speed
+			tmp_yspeed = -speed
+		end
+	end
+	if (love.keyboard.isDown( "s" ) and p_num == 1) or (love.keyboard.isDown( "down" ) and p_num == 2) then
+		map_y = map_y + speed
+		tmp_yspeed = speed
+	end
+ 
+	if (love.keyboard.isDown( "a" ) and p_num == 1) or (love.keyboard.isDown( "left" ) and p_num == 2) then
+		map_x = map_x -speed
+		tmp_xspeed = -speed
+	end
+	if (love.keyboard.isDown( "d" ) and p_num == 1) or (love.keyboard.isDown( "right" ) and p_num == 2) then
+		if p.curses_active[8] then
+			map_y = map_y - speed
+			tmp_yspeed = -speed
+		else
+			map_x = map_x + speed
+			tmp_xspeed = speed
+		end
+		
+	end
+
+	if p_num == 1 then
+		p1.map_x = map_x
+		p1.map_y = map_y
+	else
+		p2.map_x = map_x
+		p2.map_y = map_y
+	end
+
+ 	col = checkCharacterCollision(p_num)
+
+	if col then
+		if p_num == 1 then
+			p1.map_y = p1.old_map_y
+	 		p1.map_x = p1.old_map_x
+		else
+			p2.map_y = p2.old_map_y
+	 		p2.map_x = p2.old_map_x
+		end
+		
+	end
+
+	 if not (tmp_xspeed == 0 and tmp_yspeed == 0) then
+	 	if p_num == 1 then
+			p1.char_old_xspeed = tmp_xspeed
+			p1.char_old_yspeed = tmp_yspeed
+		else
+			p2.char_old_xspeed = tmp_xspeed
+			p2.char_old_yspeed = tmp_yspeed
+		end
+		
+	end
+
+	-- 	------------------- P2
+	-- if love.keyboard.isDown( "up" ) then
+		
+	-- 	if curses_active[8] then
+	-- 		map_x = map_x + speed
+	-- 		tmp_xspeed = speed
+	-- 	else
+	-- 		map_y = map_y - speed
+	-- 		tmp_yspeed = -speed
+	-- 	end
+	-- end
+	-- if love.keyboard.isDown( "down" ) then
+	-- 	map_y = map_y + speed
+	-- 	tmp_yspeed = speed
+	-- end
+ 
+	-- if love.keyboard.isDown( "left" ) then
+	-- 	map_x = map_x -speed
+	-- 	tmp_xspeed = -speed
+	-- end
+	-- if love.keyboard.isDown( "right" ) then
+	-- 	if curses_active[8] then
+	-- 		map_y = map_y - speed
+	-- 		tmp_yspeed = -speed
+	-- 	else
+	-- 		map_x = map_x + speed
+	-- 		tmp_xspeed = speed
+	-- 	end
+		
+	-- end
+	-- ----------------
+
+end
+
+function checkCharacterCollision(p_num)
+	if(p_num == 1) then
+		char_x = p1.char_x
+		char_y = p1.char_y
+		char_r = p1.char_r
+		map_x = p1.map_x
+		map_y = p1.map_y
+	else
+		char_x = p2.char_x
+		char_y = p2.char_y
+		char_r = p2.char_r
+		map_x = p2.map_x -- Oh.... this was a bad way to implement two players.... haha oh well
+		map_y = p2.map_y
+	end
+
 	ctx = math.floor((char_x + map_x)/tile_w)	
 	cty = math.floor((char_y + map_y)/tile_h)
 	tilenum = map[cty+1][ctx+1] -- arrays in lua really start counting at 1 ??
@@ -378,7 +590,6 @@ function checkCharacterCollision()
 	collision = false
 	for y=lume.clamp(cty-1, 0, map_h-1), lume.clamp(cty+1, 0, map_h-1) do
 		for x=lume.clamp(ctx-1, 0, map_w-1), lume.clamp(ctx+1, 0, map_w-1) do
-			-- print(x..'.'..y) 
 			-- detect collision to individual square
 			tx = x +1
 			ty = y +1
@@ -399,89 +610,148 @@ function checkCharacterCollision()
 	return collision
 end
 
-function checkMapBoundary()
-	-- check boundaries. remove this section if you don't wish to be constrained to the map.
+-- function checkMapBoundary()
+-- 	-- check boundaries. remove this section if you don't wish to be constrained to the map.
+
+-- 	-- TODO Superfluous?
 	
-	if map_x < 0 then
-		map_x = 0
-	end
+-- 	if map_x < 0 then
+-- 		map_x = 0
+-- 	end
  
-	if map_y < 0 then
-		map_y = 0
-	end	
+-- 	if map_y < 0 then
+-- 		map_y = 0
+-- 	end	
  
-	if map_x > map_w * tile_w - map_display_w * tile_w - 1 then
-		map_x = map_w * tile_w - map_display_w * tile_w - 1
-	end
+-- 	if map_x > map_w * tile_w - map_display_w * tile_w - 1 then
+-- 		map_x = map_w * tile_w - map_display_w * tile_w - 1
+-- 	end
  
-	if map_y > map_h * tile_h - map_display_h * tile_h - 1 then
-		map_y = map_h * tile_h - map_display_h * tile_h - 1
+-- 	if map_y > map_h * tile_h - map_display_h * tile_h - 1 then
+-- 		map_y = map_h * tile_h - map_display_h * tile_h - 1
+-- 	end
+-- end
+
+
+function pre_applyGraphicCurses(p_num)
+	if p_num == 1 then --- sigh...
+		p = p1
+	else
+		p = p2
 	end
-end
 
-
-
-function love.draw()
-	-- love.graphics.setColorMask( red, green, blue, alpha )
-
-
-	-- love.graphics.clear()
-	-- TODO
-	-- Split Screen Attempt
-	love.graphics.setScissor( 0, 0, width/2, height )
-	love.graphics.translate(-width/4, 0)
-	love.graphics.clear()
-
-	if curses_active[6] then
+	if p.curses_active[6] then
 		love.graphics.translate(width/2, height/2)
 		local t = love.timer.getTime()
 		love.graphics.shear(0.7*math.cos(t), 0.7*math.cos(t * 0.8))
 		love.graphics.translate(-width/2, -height/2)
 	end
-	if curses_active[1] then
-		love.graphics.translate(curse1_x, curse1_y)
+
+	if p.curses_active[1] then
+		love.graphics.translate(p.curse1_x, p.curse1_y)
 	end
-	if curses_active[4] then
+	if p.curses_active[4] then
 		love.graphics.translate(width/2, height/2)
-		love.graphics.rotate(curse4_rotation)
+		love.graphics.rotate(p.curse4_rotation)
 		love.graphics.translate(-width/2, -height/2)
 	end
 
+end
 
+function post_applyGraphicCurses(p_num)
+	if p_num == 1 then --- sigh...
+		p = p1
+	else
+		p = p2
+	end
+
+	if p.curses_active[5] then
+		love.graphics.setColor(255,255,255,255)
+		love.graphics.draw(p.psystem, 0, 0)
+		-- love.graphics.draw(pic_banana, 0 , 0 ) -- - tile_h/2
+	end
+end
+
+function postpost_applyGraphicCurses(p_num)
+	if p_num == 1 then --- sigh...
+		p = p1
+	else
+		p = p2
+	end
+
+	if p.curses_active[2] then
+		love.graphics.setColor(0,0,0,p.curse2_blacken)
+		love.graphics.rectangle("fill",0,0,width,height)
+		
+	end
+end
+
+function drawHUD(p_num)
+	if p_num == 1 then --- sigh...
+		p = p1
+		x = 10
+	else
+		p = p2
+		x = width/2 + 10
+	end
+
+	love.graphics.setColor(255,255,255)
+	love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
+
+	love.graphics.setColor(255,0,0)
+	love.graphics.print("Curses: "..p.curse_num, x, height-30)
+
+	if p.bullet_counter == 10 and p.bullet_reset > 0 then
+		love.graphics.print("Reloading ("..lume.round(p.bullet_reset*10)..")", x, height-50)
+	else
+		love.graphics.print("Bullets: "..p.bullet_counter, x, height-50)
+	end
+
+
+end
+
+
+function love.draw()
+	-- love.graphics.clear()
 	-- love.graphics.setColor(255,0,255)
 	-- love.graphics.rectangle("fill",0,0,width,height)
+
+	--- player 1 ========================
+
+	love.graphics.setScissor( 0, 0, width/2, height )
+	love.graphics.translate(-width/4, 0)
+	love.graphics.clear()
+	
+	pre_applyGraphicCurses(1)
 
 	draw_map(1)
 	draw_bullets(1)
 	draw_player(1)
+	draw_other_player(2)
 
-	
-	-- TODO draw HUD
-	love.graphics.setColor(255,255,255)
-	love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
+	post_applyGraphicCurses(1)
+	love.graphics.origin()
+	postpost_applyGraphicCurses(1)
 
-	
+	drawHUD(1)
 
+	--- player 2 ========================
 
-	if curses_active[2] then
-		love.graphics.setColor(0,0,0,curse2_blacken)
-		love.graphics.rectangle("fill",0,0,width,height)
-		
-	end
-	if curses_active[5] then
-		love.graphics.setColor(255,255,255,255)
-		love.graphics.draw(psystem, 0, 0)
-		-- love.graphics.draw(pic_banana, 0 , 0 ) -- - tile_h/2
-	end
-
-
-	--- player 2
 	love.graphics.setScissor( width/2, 0, width, height )
-	love.graphics.translate(width/4+width/4, 0)
+	love.graphics.translate(width/4, 0)
 	love.graphics.clear()
+
+	pre_applyGraphicCurses(2)
 
 	draw_map(2)
 	draw_bullets(2)
 	draw_player(2)
+	draw_other_player(1)
+
+	post_applyGraphicCurses(2)
+	love.graphics.origin()
+	postpost_applyGraphicCurses(2)
+
+	drawHUD(2)
 
 end
