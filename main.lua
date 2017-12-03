@@ -95,8 +95,8 @@ function love.load()
   	respawn(2)
   	-- {true,true,true,true,true,true,true,true,true}
   	-- {false,false,false,false,false,false,false,false,false}
-  	p1.curses_active = {false,false,false,false,false,false,false,false,false}
-  	p2.curses_active = {false,false,false,false,false,false,false,false,false}
+  	p1.curses_active = {true,false,false,false,false,false,false,false,false}
+  	p2.curses_active = {true,false,false,false,false,false,false,false,false}
 
 	-- curse 1 screen shake
 	-- curse 2 screen darken sometimes
@@ -115,9 +115,19 @@ function love.load()
 	love.graphics.setNewFont( 20 )
 
 	-- SOUND
+
+	-- TODO volumes ok?
 	music = love.audio.newSource("LudumDare40_CrazyContest.ogg")
 	playSound()
 	setPitch(1)
+
+	-- bullet shoot sound
+	sound_bullet = love.audio.newSource("LudumDare40_Bulletsound.ogg")
+	sound_hit = love.audio.newSource("LudumDare40_Hitsound.ogg")
+	sound_hit:setVolume(1)
+	sound_earthquake = love.audio.newSource("LudumDare40_Earthquake.ogg")
+	sound_earthquake:setVolume(1) -- "Volume cannot be raised above 1.0." meh
+
 end
 
 function spawnCurses()
@@ -185,7 +195,7 @@ function drawCurses(p_num)
 end
 
 function playSound()
-  	music:setVolume(0.5)
+  	music:setVolume(0.3)
   	music:setLooping(true)
   	music:play() -- from beginning TODO ?
  	
@@ -271,11 +281,11 @@ function draw_map(p_num)
 
 	offset_x = map_x % tile_w
 	offset_y = map_y % tile_h
-	firstTile_x = math.floor(map_x / tile_w)
+	firstTile_x = math.floor(map_x / tile_w) 
 	firstTile_y = math.floor(map_y / tile_h)
  
-	for y=1, (map_display_h + map_display_buffer) do
-		for x=1, (map_display_w + map_display_buffer) do
+	for y=-map_display_buffer, (map_display_h + map_display_buffer) do -- !! TODO update Love2d Wikid for y = -buffer instead of y = 1
+		for x=-map_display_buffer, (map_display_w + map_display_buffer) do
 			-- Note that this condition block allows us to go beyond the edge of the map.
 			if y+firstTile_y >= 1 and y+firstTile_y <= map_h
 				and x+firstTile_x >= 1 and x+firstTile_x <= map_w
@@ -399,6 +409,18 @@ function love.update( dt ) -- TODO =============================================
 	if love.keyboard.isDown( "escape" ) then
 		love.event.quit()
 	end
+
+	-- Win Condition
+
+
+	-- Adapt sound
+	maxc = math.max(p1.curse_num,p2.curse_num)
+	if maxc >= 6 then
+		print('WINNER!')
+	end
+	p = 0.8+0.1*maxc
+	setPitch(p) -- TODO ok to set pitch this often?
+	-- print(p)
 end
 
 function updateCurses(p_num, dt)
@@ -422,9 +444,13 @@ function updateCurses(p_num, dt)
 	-- curse1_rotangle = (dt*5)-(10*dt)
 	if p.curses_active[1] then
 		if p.curse1_timeout < 0 then
+			if not sound_earthquake:isPlaying() then
+				sound_earthquake:play()
+			end
 			p.curse1_x = lume.random(-10, 10)
 			p.curse1_y = lume.random(-10, 10)
 			if p.curse1_timeout < -4 then
+				sound_earthquake:stop()
 				p.curse1_timeout = lume.random(3,7.5)
 			end
 		end
@@ -516,6 +542,10 @@ function shootBullets(dt,p_num)
 
  			bullets[#bullets+1]=b
 
+ 			-- bullet sound
+ 			sound_bullet:stop()
+ 			sound_bullet:play()
+
  			if p.curses_active[3] then
  				bullet_counter = 1
  			end
@@ -565,6 +595,7 @@ function updateBullets(dt)
 		if lume.distance(b.x,b.y,p1.map_x+p1.char_x,p1.map_y+p1.char_y, false) < br+p1.char_r and b.p_num == 2 and p1.invincible == 0 then
 			print('col1'..frame_count)
 			respawn(1)
+			sound_hit:play()
 			-- pick a random true curse if there is one, set to false, respawn it
 			actives = {}
 			for j=1,#p1.curses_active do
@@ -581,6 +612,7 @@ function updateBullets(dt)
 		if lume.distance(b.x,b.y,p2.map_x+p2.char_x,p2.map_y+p2.char_y, false) < br+p2.char_r and b.p_num == 1 and p2.invincible == 0 then
 			print('col2'..frame_count)
 			respawn(2)
+			sound_hit:play()
 			-- steal random curse
 			-- make p2 invisi. for a sec and respawn player
 			actives = {}
@@ -926,4 +958,16 @@ function love.draw()
 
 	drawHUD(2)
 
+	-- victory
+	love.graphics.setScissor( ) -- disable scissor
+	maxc = math.max(p1.curse_num,p2.curse_num)
+	if maxc >= 6 then
+		if p1.curse_num >= 6 then
+			love.graphics.setColor(255,255,255)
+			love.graphics.print("P1 WON!!!", width/2-50, height/2)
+		else
+			love.graphics.setColor(255,255,255)
+			love.graphics.print("P2 WON!!!", width/2-50, height/2)
+		end
+	end
 end
