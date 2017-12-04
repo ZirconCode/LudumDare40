@@ -50,7 +50,7 @@ function love.load()
 	map = {}
 
 	bullet_reloadcount = 15
-	curses_to_win = 6 -- 1 for testing
+	curses_to_win = 6 -- 1 for testing =================================================
 
 	map_display_w = 20
 	map_display_h = 15
@@ -269,6 +269,7 @@ function drawCurses(p_num)
 end
 
 function playSound()
+	music:stop() -- stop music from last time, if reset
   	music:setVolume(0.3)
   	music:setLooping(true)
   	music:play() -- from beginning TODO ?
@@ -517,9 +518,9 @@ function draw_other_player(p_num) -- haha such ugly code..
 
 	if p_num == 2 then
 		-- love.graphics.draw(pic_char1, char_x-char_r , char_y-char_r, rotate_by)
-		love.graphics.draw(pic_char1, -map_x+char_x, -map_y+char_y, rotate_by, 1, 1, char_r, char_r) -- offset around center to rotate properly
+		love.graphics.draw(pic_char2, -map_x+char_x, -map_y+char_y, rotate_by, 1, 1, char_r, char_r) -- offset around center to rotate properly
 	else
-		love.graphics.draw(pic_char2, -map_x+char_x, -map_y+char_y, rotate_by, 1, 1, char_r, char_r)
+		love.graphics.draw(pic_char1, -map_x+char_x, -map_y+char_y, rotate_by, 1, 1, char_r, char_r)
 	end
 	
 	-- love.graphics.ellipse( "fill", -map_x+char_x, -map_y+char_y, char_r, char_r  )
@@ -550,6 +551,7 @@ function love.keyreleased(key)
 	if gameState == 200 then
 		if key == "r" then
 			love.load()
+			music:stop() -- otherwise keeps playing..
 		end
 	end
 
@@ -585,10 +587,13 @@ function love.update( dt ) -- TODO =============================================
 
 		-- Adapt sound
 		maxc = math.max(p1.curse_num,p2.curse_num)
-		if maxc >= 6 then
-			print('WINNER!')
-		end
-		p = 0.8+0.1*maxc
+		-- if maxc >= 6 then
+		-- 	print('WINNER!')
+		-- end
+		p = 0.84
+		if maxc >= 2 then p = 1 end
+		if maxc >= 5 then p = 1.2 end
+		-- p = 0.85+0.05*maxc
 		setPitch(p) -- TODO ok to set pitch this often?
 		-- print(p)
 
@@ -599,9 +604,11 @@ function love.update( dt ) -- TODO =============================================
 			if p1.curse_num >= curses_to_win then
 				victory_player = 1
 				gameState = 200
+				setPitch(1)
 			else
 				victory_player = 2
 				gameState = 200
+				setPitch(1)
 			end
 		end
 	end
@@ -1155,11 +1162,14 @@ function love.draw()
 
 	if gameState == 200 then
 		-- victory_player
-
-		-- victory TODO
 		love.graphics.setScissor( ) -- disable scissor
+
+		love.graphics.setColor(255,255,255,255)
+		love.graphics.draw(screens[6], 0,0 )
+
 		love.graphics.setColor(255,255,255)
-		love.graphics.print("P"..victory_player.." WON!!!", width/2-50, height/2)
+		love.graphics.setNewFont( 200 )
+		love.graphics.print(victory_player, width/2-50, height/4-50) -- TODO =======================
 	end
 
 end
