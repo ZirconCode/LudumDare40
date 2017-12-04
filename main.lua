@@ -10,6 +10,9 @@ io.stdout:setvbuf("no") -- for live output in sublime 3
 -- fix curses with rotation / interactivity with one another
 
 function love.load()
+	math.randomseed(os.time())	
+	-- seems to use same thing after reseting otherwise?
+
 	-- love.window.setMode( 800, 600 )
 	-- love.window.setMode( 800, 600, {fullscreen = true} )
 	width = 1200
@@ -30,6 +33,15 @@ function love.load()
 		screens[i] = love.graphics.newImage( "screen"..i..".png" )
 	end
 
+	curse_pic = {}
+	for i=1,9 do -- TODO 0 to ? // TILESET SAME FOR ALL MAPS
+		if i == 7 then
+
+		else
+			curse_pic[i] = love.graphics.newImage( "curse"..i..".png" )
+		end
+	end
+
 	pic_banana = love.graphics.newImage( "banana.png" )
 
 	pic_char1 = love.graphics.newImage( "char1.png" )
@@ -38,7 +50,7 @@ function love.load()
 	map = {}
 
 	bullet_reloadcount = 15
-	curses_to_win = 1
+	curses_to_win = 6 -- 1 for testing
 
 	map_display_w = 20
 	map_display_h = 15
@@ -136,12 +148,12 @@ function loadMap(map_num)
 
 		mapdata = require "DeadGardens" -- TODO
 	elseif map_num == 2 then  -- TODO
-		-- p1_x_respawn = 1200
-		-- p1_y_respawn = 1100
-		-- p2_x_respawn = 1200
-		-- p2_y_respawn = 950
+		p1_x_respawn = 475
+		p1_y_respawn = 75
+		p2_x_respawn = 475+50*4
+		p2_y_respawn = 75
 
-		-- mapdata = require "DeadGardens" -- TODO
+		mapdata = require "tinyisland" -- TODO
 	end
 
 	-- mapdata = require "map1"
@@ -249,9 +261,10 @@ function drawCurses(p_num)
 	for i=1,#map_curses do
 		love.graphics.setColor(255,255,255,255)
 		c = map_curses[i]
-		love.graphics.ellipse( "fill", c[1]-p.map_x, c[2]-p.map_y, 25, 25 )
-		love.graphics.setColor(50,0,0,255)
-		love.graphics.print("c"..c[3], c[1]-p.map_x, c[2]-p.map_y)
+		-- love.graphics.ellipse( "fill", c[1]-p.map_x, c[2]-p.map_y, 25, 25 )
+		-- love.graphics.setColor(50,0,0,255)
+		-- love.graphics.print("c"..c[3], c[1]-p.map_x, c[2]-p.map_y)
+		love.graphics.draw(curse_pic[c[3]], c[1]-p.map_x, c[2]-p.map_y,0,1,1,25,25)
 	end
 end
 
