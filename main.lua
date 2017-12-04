@@ -38,6 +38,7 @@ function love.load()
 	map = {}
 
 	bullet_reloadcount = 15
+	curses_to_win = 1
 
 	map_display_w = 20
 	map_display_h = 15
@@ -533,6 +534,12 @@ function love.keyreleased(key)
 		end
 	end
 
+	if gameState == 200 then
+		if key == "r" then
+			love.load()
+		end
+	end
+
 	if key == "escape" then
 			love.event.quit()
 	end
@@ -575,8 +582,8 @@ function love.update( dt ) -- TODO =============================================
 
 		-- check victory condition
 		maxc = math.max(p1.curse_num,p2.curse_num)
-		if maxc >= 6 then
-			if p1.curse_num >= 6 then
+		if maxc >= curses_to_win then
+			if p1.curse_num >= curses_to_win then
 				victory_player = 1
 				gameState = 200
 			else
