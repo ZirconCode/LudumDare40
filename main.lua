@@ -14,27 +14,138 @@ function love.load()
 	-- love.window.setMode( 800, 600, {fullscreen = true} )
 	width = 1200
 	height = 700
-	love.window.setMode( width, height )
+	-- width = 1920
+	-- height = 900
+	love.window.setMode( width, height ) -- , {fullscreen = true}
 	-- love.window.setMode( 1920, 1024, {fullscreen = true} )
 
 	-- our tiles
 	tile = {}
-	for i=1,7 do -- TODO 0 to ?
+	for i=1,7 do -- TODO 0 to ? // TILESET SAME FOR ALL MAPS
 		tile[i] = love.graphics.newImage( "tile"..i..".png" )
+	end
+
+	screens = {}
+	for i=1,6 do -- TODO 0 to ? // TILESET SAME FOR ALL MAPS
+		screens[i] = love.graphics.newImage( "screen"..i..".png" )
 	end
 
 	pic_banana = love.graphics.newImage( "banana.png" )
 
+	pic_char1 = love.graphics.newImage( "char1.png" )
+	pic_char2 = love.graphics.newImage( "char2.png" )
+
 	map = {}
+
+	bullet_reloadcount = 15
 
 	map_display_w = 20
 	map_display_h = 15
 	tile_w = 50
 	tile_h = 50
 
+
+	-- Default Values
+	map_w = 10
+	map_h = 10
+	p1_x_respawn = 1000
+	p1_y_respawn = 1000
+	p2_x_respawn = 1000
+	p2_y_respawn = 1000
+
+	-- loadMap(1)
+
+	frame_count = 0
+
+	-- TODO buffer?
+	map_display_buffer = 2 -- We have to buffer one tile before and behind our viewpoint.
+                           -- Otherwise, the tiles will just pop into view, and we don't want that.
+
+
+	br = 5 -- bullet radius
+	bullets = {} -- bullets for both but TODO curse 3 change to larger reset instead
+
+	-- PLAYER 1 ===========================
+	p1 = {}
+	createPlayer(1,p1)
+	
+
+  	-- PLAYER 2 ===========================
+  	p2 = {}
+	createPlayer(2,p2)
+
+  	-- ===========================
+
+  	-- loadMap(1)
+  	-- respawn(1)
+  	-- respawn(2)
+
+  	-- {true,true,true,true,true,true,true,true,true}
+  	-- {false,false,false,false,false,false,false,false,false}
+  	p1.curses_active = {false,false,false,false,false,false,false,false,false}
+  	p2.curses_active = {false,false,false,false,false,false,false,false,false}
+
+	-- curse 1 screen shake
+	-- curse 2 screen darken sometimes
+	-- curse 3 can only have one bullet at a time
+	-- curse 4 rotate slowly
+	-- curse 5 banana
+	-- curse 6 seasickness
+	-- curse 7 colors TOO HARDCORE nevermind just freezes R not GB
+	-- curse 8 switch up/right arrow
+	-- curse 9 slow down sporadically
+
+	-- love.graphics.setBackgroundColor(0, 0, 255, 50)
+
+	-- TODO FONT
+	-- font = love.graphics.newFont( 12 )
+	love.graphics.setNewFont( 20 )
+
+	-- SOUND
+
+	-- TODO volumes ok?
+	music = love.audio.newSource("LudumDare40_CrazyContest.ogg")
+	playSound()
+	setPitch(1)
+
+	-- bullet shoot sound
+	sound_bullet = love.audio.newSource("LudumDare40_Bulletsound.ogg")
+	sound_hit = love.audio.newSource("LudumDare40_Hitsound.ogg")
+	sound_hit:setVolume(1)
+	sound_earthquake = love.audio.newSource("LudumDare40_Earthquake.ogg")
+	sound_earthquake:setVolume(1) -- "Volume cannot be raised above 1.0." meh
+
+
+	gameState = 1 -- to show pictures, map select, 100 = ingame, 200 = victory
+	victory_player = 0 -- the player who won
+
+	-- -- TODO: after map select
+	-- loadMap(1)
+ --  	respawn(1)
+ --  	respawn(2)
+end
+
+function loadMap(map_num)
+	if map_num == 1 then
+			-- DeadGardens spawnpoints
+		p1_x_respawn = 1200
+		p1_y_respawn = 1100
+		p2_x_respawn = 1200
+		p2_y_respawn = 950
+
+		mapdata = require "DeadGardens" -- TODO
+	elseif map_num == 2 then  -- TODO
+		-- p1_x_respawn = 1200
+		-- p1_y_respawn = 1100
+		-- p2_x_respawn = 1200
+		-- p2_y_respawn = 950
+
+		-- mapdata = require "DeadGardens" -- TODO
+	end
+
 	-- mapdata = require "map1"
 	-- mapdata = require "map2"
-	mapdata = require "DeadGardens"
+	
 	mdat = mapdata.layers[1].data
 	map_w = mapdata.layers[1].width
 	map_h = mapdata.layers[1].height
@@ -76,64 +187,6 @@ function love.load()
 	-- map variables
 	-- map_w = #map[1] -- Obtains the width of the first row of the map
 	-- map_h = #map -- Obtains the height of the map
-
-	frame_count = 0
-
-	-- TODO buffer?
-	map_display_buffer = 2 -- We have to buffer one tile before and behind our viewpoint.
-                           -- Otherwise, the tiles will just pop into view, and we don't want that.
-
-
-	br = 5 -- bullet radius
-	bullets = {} -- bullets for both but TODO curse 3 change to larger reset instead
-
-	-- PLAYER 1 ===========================
-	p1 = {}
-	createPlayer(1,p1)
-	
-
-  	-- PLAYER 2 ===========================
-  	p2 = {}
-	createPlayer(2,p2)
-
-  	-- ===========================
-
-  	respawn(1)
-  	respawn(2)
-  	-- {true,true,true,true,true,true,true,true,true}
-  	-- {false,false,false,false,false,false,false,false,false}
-  	p1.curses_active = {false,false,false,false,false,false,false,false,false}
-  	p2.curses_active = {false,false,false,false,false,false,false,false,false}
-
-	-- curse 1 screen shake
-	-- curse 2 screen darken sometimes
-	-- curse 3 can only have one bullet at a time
-	-- curse 4 rotate slowly
-	-- curse 5 banana
-	-- curse 6 seasickness
-	-- curse 7 colors TOO HARDCORE nevermind just freezes R not GB
-	-- curse 8 switch up/right arrow
-	-- curse 9 slow down sporadically
-
-	-- love.graphics.setBackgroundColor(0, 0, 255, 50)
-
-	-- TODO FONT
-	-- font = love.graphics.newFont( 12 )
-	love.graphics.setNewFont( 20 )
-
-	-- SOUND
-
-	-- TODO volumes ok?
-	music = love.audio.newSource("LudumDare40_CrazyContest.ogg")
-	playSound()
-	setPitch(1)
-
-	-- bullet shoot sound
-	sound_bullet = love.audio.newSource("LudumDare40_Bulletsound.ogg")
-	sound_hit = love.audio.newSource("LudumDare40_Hitsound.ogg")
-	sound_hit:setVolume(1)
-	sound_earthquake = love.audio.newSource("LudumDare40_Earthquake.ogg")
-	sound_earthquake:setVolume(1) -- "Volume cannot be raised above 1.0." meh
 
 end
 
@@ -222,11 +275,11 @@ function respawn(p_num)
 	p.invincible = 4
 
 	if p_num == 1 then
-		p.map_x = 1200
-		p.map_y = 1100
+		p.map_x = p1_x_respawn
+		p.map_y = p1_y_respawn
 	else
-		p.map_x = 1200
-		p.map_y = 950
+		p.map_x = p2_x_respawn
+		p.map_y = p2_y_respawn
 	end
 end
 
@@ -239,7 +292,7 @@ function createPlayer(p_num,p)
 	p.char_r = 20
 
 	p.bullet_reset = 0
-	p.bullet_counter = 10
+	p.bullet_counter = bullet_reloadcount
 
 
 	p.curse1_x = 0
@@ -354,16 +407,44 @@ function draw_player(p_num)
 		p = p2
 	end
 
-	love.graphics.setColor(0,0,0)
+	love.graphics.setColor(255,255,255,255)
 	if(p.invincible > 0) then
 			love.graphics.setColor(255,255,255,100)
 	end
 
-	love.graphics.ellipse( "fill", char_x, char_y, char_r, char_r  )
+	-- TODO Rotate
+	rotate_by = 0
+
+	--- -____-
+	if p.char_old_xspeed > 0 and p.char_old_yspeed > 0 then
+		rotate_by = (3/4)*math.pi
+	elseif p.char_old_xspeed > 0 and p.char_old_yspeed < 0 then
+		rotate_by = (1/4)*math.pi
+	elseif p.char_old_xspeed > 0 and p.char_old_yspeed == 0 then
+		rotate_by = (1/2)*math.pi
+	elseif p.char_old_xspeed == 0 and p.char_old_yspeed > 0 then
+		rotate_by = (1)*math.pi
+	elseif p.char_old_xspeed < 0 and p.char_old_yspeed > 0 then
+		rotate_by = (1+1/4)*math.pi
+	elseif p.char_old_xspeed < 0 and p.char_old_yspeed == 0 then
+		rotate_by = (1+1/2)*math.pi
+	elseif p.char_old_xspeed < 0 and p.char_old_yspeed < 0 then
+		rotate_by = (1+3/4)*math.pi
+	end
+
+	if p_num == 1 then
+		-- love.graphics.draw(pic_char1, char_x-char_r , char_y-char_r, rotate_by)
+		love.graphics.draw(pic_char1, char_x, char_y, rotate_by, 1, 1, char_r, char_r) -- offset around center to rotate properly
+	else
+		love.graphics.draw(pic_char2, char_x, char_y, rotate_by, 1, 1, char_r, char_r)
+	end
+	
+
+	-- love.graphics.ellipse( "fill", char_x, char_y, char_r, char_r  )
 end
 
 function draw_other_player(p_num) -- haha such ugly code..
-	love.graphics.setColor(255,0,0)
+	-- love.graphics.setColor(255,0,0)
 
 	if p_num == 1 then -- draw 2nd player on first screen
 		char_x = p1.char_x
@@ -371,11 +452,12 @@ function draw_other_player(p_num) -- haha such ugly code..
 		char_r = p1.char_r
 		map_x = p2.map_x-p1.map_x
 		map_y = p2.map_y-p1.map_y
+		p = p1
 		-- p = p2
 
-		if(p1.invincible > 0) then
-			love.graphics.setColor(255,255,0,200)
-		end
+		-- if(p1.invincible > 0) then
+		-- 	love.graphics.setColor(255,255,0,200)
+		-- end
 	else
 		-- print('yesy')
 		char_x = p2.char_x
@@ -384,50 +466,130 @@ function draw_other_player(p_num) -- haha such ugly code..
 		map_x = p1.map_x-p2.map_x
 		map_y = p1.map_y-p2.map_y
 		-- p = p1
+		p = p2
 
-		if(p2.invincible > 0) then
-			love.graphics.setColor(255,255,0,200)
-		end
+		-- if(p2.invincible > 0) then
+		-- 	love.graphics.setColor(255,255,0,200)
+		-- end
 	end
 	-- print(p1.map_x ..','..p1.map_y..':'..p2.map_x ..','..p2.map_y..':')
 	-- print(p1.char_x ..','..p1.char_y..':'..p2.char_x ..','..p2.char_y..':') -- static
 	-- print(p1.map_x..'hmm'..p1.map_y)
+
+	love.graphics.setColor(255,255,255,255)
+	if(p.invincible > 0) then
+			love.graphics.setColor(255,255,255,100)
+	end
+
+	-- TODO Rotate
+	rotate_by = 0
+
+	--- -____-
+	if p.char_old_xspeed > 0 and p.char_old_yspeed > 0 then
+		rotate_by = (3/4)*math.pi
+	elseif p.char_old_xspeed > 0 and p.char_old_yspeed < 0 then
+		rotate_by = (1/4)*math.pi
+	elseif p.char_old_xspeed > 0 and p.char_old_yspeed == 0 then
+		rotate_by = (1/2)*math.pi
+	elseif p.char_old_xspeed == 0 and p.char_old_yspeed > 0 then
+		rotate_by = (1)*math.pi
+	elseif p.char_old_xspeed < 0 and p.char_old_yspeed > 0 then
+		rotate_by = (1+1/4)*math.pi
+	elseif p.char_old_xspeed < 0 and p.char_old_yspeed == 0 then
+		rotate_by = (1+1/2)*math.pi
+	elseif p.char_old_xspeed < 0 and p.char_old_yspeed < 0 then
+		rotate_by = (1+3/4)*math.pi
+	end
+
+	if p_num == 2 then
+		-- love.graphics.draw(pic_char1, char_x-char_r , char_y-char_r, rotate_by)
+		love.graphics.draw(pic_char1, -map_x+char_x, -map_y+char_y, rotate_by, 1, 1, char_r, char_r) -- offset around center to rotate properly
+	else
+		love.graphics.draw(pic_char2, -map_x+char_x, -map_y+char_y, rotate_by, 1, 1, char_r, char_r)
+	end
 	
-	love.graphics.ellipse( "fill", -map_x+char_x, -map_y+char_y, char_r, char_r  )
+	-- love.graphics.ellipse( "fill", -map_x+char_x, -map_y+char_y, char_r, char_r  )
 end
  
+function love.keyreleased(key)
+   if gameState < 5 then
+		if key == "s" then
+			gameState = 5
+		elseif key == "space" then
+			gameState = gameState +1
+		end
+	elseif gameState == 5 then
+		if key == "1" then
+			-- TODO: after map select
+			loadMap(1)
+  			respawn(1)
+  			respawn(2)
+  			gameState = 100
+		elseif key == "2" then
+			loadMap(2)
+  			respawn(1)
+  			respawn(2)
+  			gameState = 100
+		end
+	end
+
+	if key == "escape" then
+			love.event.quit()
+	end
+end
+
 function love.update( dt ) -- TODO ======================================================
 
-  	updateCurses(1,dt)
-  	updateCurses(2,dt)
-	
-	movePlayer(1,dt)
-	movePlayer(2,dt)
+	-- see keyreleased for other gamestates
 
-	checkCurseCollision(1)
-	checkCurseCollision(2)
+	if gameState == 100 then
+		updateCurses(1,dt)
+	  	updateCurses(2,dt)
+		
+		movePlayer(1,dt)
+		movePlayer(2,dt)
 
- 	shootBullets(dt,1)
- 	shootBullets(dt,2)
- 	updateBullets(dt)
+		checkCurseCollision(1)
+		checkCurseCollision(2)
 
-	--checkMapBoundary()
-	-- checkCharacterCollision() -- ??? time to cleanup some code...
-	if love.keyboard.isDown( "escape" ) then
-		love.event.quit()
+	 	shootBullets(dt,1)
+	 	shootBullets(dt,2)
+	 	updateBullets(dt)
+
+		--checkMapBoundary()
+		-- checkCharacterCollision() -- ??? time to cleanup some code...
+		
+
+		-- Win Condition
+
+
+		-- Adapt sound
+		maxc = math.max(p1.curse_num,p2.curse_num)
+		if maxc >= 6 then
+			print('WINNER!')
+		end
+		p = 0.8+0.1*maxc
+		setPitch(p) -- TODO ok to set pitch this often?
+		-- print(p)
+
+
+		-- check victory condition
+		maxc = math.max(p1.curse_num,p2.curse_num)
+		if maxc >= 6 then
+			if p1.curse_num >= 6 then
+				victory_player = 1
+				gameState = 200
+			else
+				victory_player = 2
+				gameState = 200
+			end
+		end
 	end
 
-	-- Win Condition
-
-
-	-- Adapt sound
-	maxc = math.max(p1.curse_num,p2.curse_num)
-	if maxc >= 6 then
-		print('WINNER!')
-	end
-	p = 0.8+0.1*maxc
-	setPitch(p) -- TODO ok to set pitch this often?
-	-- print(p)
+  	if gameState == 200 then
+  		-- hmmm
+  		-- victory_player
+  	end
 end
 
 function updateCurses(p_num, dt)
@@ -561,7 +723,7 @@ function shootBullets(dt,p_num)
  			bullet_counter = bullet_counter -1
  			if bullet_counter == 0 then
  				bullet_reset = 1
- 				bullet_counter = 10
+ 				bullet_counter = bullet_reloadcount
  			end
  		end
  	end
@@ -910,7 +1072,7 @@ function drawHUD(p_num)
 	love.graphics.setColor(255,0,0)
 	love.graphics.print("Curses: "..p.curse_num, x, height-30)
 
-	if p.bullet_counter == 10 and p.bullet_reset > 0 then
+	if p.bullet_counter == bullet_reloadcount and p.bullet_reset > 0 then
 		love.graphics.print("Reloading ("..lume.round(p.bullet_reset*10)..")", x, height-50)
 	else
 		love.graphics.print("Bullets: "..p.bullet_counter, x, height-50)
@@ -921,60 +1083,63 @@ end
 
 
 function love.draw()
+	if gameState < 10 then
+		love.graphics.setColor(255,255,255,255)
+		love.graphics.draw(screens[gameState], 0,0 )
+	end
+
 	-- love.graphics.clear()
 	-- love.graphics.setColor(255,0,255)
 	-- love.graphics.rectangle("fill",0,0,width,height)
 
-	--- player 1 ========================
+	if gameState == 100 then
+		--- player 1 ========================
 
-	love.graphics.setScissor( 0, 0, width/2, height )
-	love.graphics.translate(-width/4, 0)
-	love.graphics.clear()
-	
-	pre_applyGraphicCurses(1)
+		love.graphics.setScissor( 0, 0, width/2, height )
+		love.graphics.translate(-width/4, 0)
+		love.graphics.clear()
+		
+		pre_applyGraphicCurses(1)
 
-	draw_map(1)
-	drawCurses(1)
-	draw_bullets(1)
-	draw_player(1)
-	draw_other_player(2)
+		draw_map(1)
+		drawCurses(1)
+		draw_bullets(1)
+		draw_player(1)
+		draw_other_player(2)
 
-	post_applyGraphicCurses(1)
-	love.graphics.origin()
-	postpost_applyGraphicCurses(1)
+		post_applyGraphicCurses(1)
+		love.graphics.origin()
+		postpost_applyGraphicCurses(1)
 
-	drawHUD(1)
+		drawHUD(1)
 
-	--- player 2 ========================
+		--- player 2 ========================
+		love.graphics.setScissor( width/2, 0, width, height )
+		love.graphics.translate(width/4, 0)
+		love.graphics.clear()
 
-	love.graphics.setScissor( width/2, 0, width, height )
-	love.graphics.translate(width/4, 0)
-	love.graphics.clear()
+		pre_applyGraphicCurses(2)
 
-	pre_applyGraphicCurses(2)
+		draw_map(2)
+		drawCurses(2)
+		draw_bullets(2)
+		draw_player(2)
+		draw_other_player(1)
 
-	draw_map(2)
-	drawCurses(2)
-	draw_bullets(2)
-	draw_player(2)
-	draw_other_player(1)
+		post_applyGraphicCurses(2)
+		love.graphics.origin()
+		postpost_applyGraphicCurses(2)
 
-	post_applyGraphicCurses(2)
-	love.graphics.origin()
-	postpost_applyGraphicCurses(2)
-
-	drawHUD(2)
-
-	-- victory
-	love.graphics.setScissor( ) -- disable scissor
-	maxc = math.max(p1.curse_num,p2.curse_num)
-	if maxc >= 6 then
-		if p1.curse_num >= 6 then
-			love.graphics.setColor(255,255,255)
-			love.graphics.print("P1 WON!!!", width/2-50, height/2)
-		else
-			love.graphics.setColor(255,255,255)
-			love.graphics.print("P2 WON!!!", width/2-50, height/2)
-		end
+		drawHUD(2)
 	end
+
+	if gameState == 200 then
+		-- victory_player
+
+		-- victory TODO
+		love.graphics.setScissor( ) -- disable scissor
+		love.graphics.setColor(255,255,255)
+		love.graphics.print("P"..victory_player.." WON!!!", width/2-50, height/2)
+	end
+
 end
